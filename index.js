@@ -47,6 +47,20 @@ async function run() {
             const result = await orderCollection.insertOne(order);
             res.send(result);
         })
+
+        //get mane onnek gula user ase kin2 amr website e jei email diye login kora ase shudhu tar e order list dekhabe.
+
+        app.get('/orders', async (req, res) => {
+            let query = {};
+            if (req.query.email) {
+                query = {
+                    email: req.query.email
+                }
+            }
+            const cursor = orderCollection.find(query);
+            const order = await cursor.toArray();
+            res.send(order);
+        })
     }
     finally {
 

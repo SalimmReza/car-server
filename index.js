@@ -40,7 +40,7 @@ async function run() {
         })
 
         //order api
-        //put data in db
+        //entry data in db
 
         app.post('/orders', async (req, res) => {
             const order = req.body;
@@ -60,6 +60,28 @@ async function run() {
             const cursor = orderCollection.find(query);
             const order = await cursor.toArray();
             res.send(order);
+        })
+
+        app.delete('/orders/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await orderCollection.deleteOne(query);
+            res.send(result);
+        })
+
+        //update specific data
+
+        app.patch('/orders/:id', async (req, res) => {
+            const id = req.params.id;
+            const status = req.body.status;
+            const query = { _id: ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    status: status
+                }
+            }
+            const result = await orderCollection.updateOne(query, updateDoc);
+            res.send(result);
         })
     }
     finally {

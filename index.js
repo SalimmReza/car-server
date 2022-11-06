@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
@@ -17,10 +18,56 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster
 
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+const verifyJWT = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    console.log(authHeader)
+    if (!authHeader) {
+        return res.status(401).send({ message: 'unauthorized user' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({ message: 'unauthorized user' })
+        }
+        req.decoded = decoded;
+        next();
+    })
+
+}
+
+// function verifyJWT(req, res, next) {
+//     const authHeader = req.headers.authorization;
+
+//     if (!authHeader) {
+//         return res.status(401).send({ message: 'unauthorized access' });
+//     }
+//     const token = authHeader.split(' ')[1];
+
+//     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+//         if (err) {
+//             return res.status(403).send({ message: 'Forbidden access' });
+//         }
+//         req.decoded = decoded;
+//         next();
+//     })
+// }
+
 async function run() {
     try {
         const serviceCollection = client.db('carMechanic').collection('services');
         const orderCollection = client.db('carMechanic').collection('orders');
+
+
+        //jwt token
+
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            // const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '1d' })
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '1d' })
+            res.send({ token })
+
+        })
 
         //get all data
         app.get('/services', async (req, res) => {
@@ -50,7 +97,12 @@ async function run() {
 
         //get mane onnek gula user ase kin2 amr website e jei email diye login kora ase shudhu tar e order list dekhabe.
 
-        app.get('/orders', async (req, res) => {
+        app.get('/orders', verifyJWT, async (req, res) => {
+            const decoded = req.decoded;
+            console.log('inside orders', decoded);
+            if (decoded.email !== req.query.email) {
+                return res.status(403).send({ message: 'cant access' })
+            }
             let query = {};
             if (req.query.email) {
                 query = {
